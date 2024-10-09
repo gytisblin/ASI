@@ -23,8 +23,10 @@ load('DownloadListChar.mat')
 FTPServer = ftp('optics.gi.alaska.edu')%crash here means not connecting to server
 rootfolder = 'PKR/DASC/RAW';
 cd(FTPServer,rootfolder);
-yearfolder = ['2014';'2015'; '2016'; '2017'; '2018'; '2019'];
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% yearfolder = ['2014';'2015'; '2016'; '2017'; '2018'; '2019'];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+yearfolder = ['2014';'2015'; '2016'; '2017'; '2018'];
 %scan through ASCScintDaysChar to find last day of 2014
 c = 0;
 while (strcmp(ASCScintDaysChar{c+1}(1:4),'2014'))
@@ -42,16 +44,21 @@ f = e;
 while (strcmp(ASCScintDaysChar{f+1}(1:4),'2017'))
     f = f+1;
 end
-g = f;
-while (strcmp(ASCScintDaysChar{g+1}(1:4),'2018'))
-    g = g+1;
-end
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% g = f;
+% while (strcmp(ASCScintDaysChar{g+1}(1:4),'2018'))
+%     g = g+1;
+% end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
+g=i
 % lastday = max(find(strncmpi(ASCScintDays,"2014",4)));
-loopbounds = [1 c; (c+1) d; (d+1) e; (e+1) f; (f+1) g; (g+1) length(ASCScintDaysChar)];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5555
+% loopbounds_2019 = [1 c; (c+1) d; (d+1) e; (e+1) f; (f+1) g; (g+1) length(ASCScintDaysChar)];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
+loopbounds = [1 c; (c+1) d; (d+1) e; (e+1) f; (f+1) g];
 
 % mkdir('ASCDownloadFolder');
-addpath(genpath('C:\Users\Alex\Desktop\CloudShapeRun\ASCDownloads'));
+addpath(genpath('E:\GNSS_Research\Code\alex_code\scintillation_asi_layer_detection\Code\Data\ASCDownloads'));
 % addpath('C:\Users\David\Desktop\MATLAB Work\ASCDownloadFolder');
 % addpath('C:\Users\RE-223-9\Documents\FTPWork\Download\ASCDownloadFolder');
 not_downloaded = {};
