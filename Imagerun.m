@@ -33,7 +33,7 @@ FITSData(3,:,:) = fitsread(RedFilename);
 % DarkData(1,:,:) = fitsread(DarkGreenFilename); %GBR order
 % DarkData(2,:,:) = fitsread(DarkBlueFilename);
 % DarkData(3,:,:) = fitsread(DarkRedFilename);
- %%ASCPlotterAll(DarkData,DarkFilename,'counts', 0, 1, 6)
+% % ASCPlotterAll(DarkData,DarkFilename,'counts', 0, 1, 6)
 %
 % % 12x12 bottom-right corner region (501:512,501:512) averaged, used as bias
 % BiasRegion = DarkData(:,501:512,501:512);
@@ -43,7 +43,7 @@ FITSData(3,:,:) = fitsread(RedFilename);
 ASCCal = [70; 105; 27]; %Rayleighs/count (for 1s exposure) GBR
 t_exp = [1; 1; 1.5]; %seconds exposure, GBR (ie red=1.5s)
 ASCRayData = repmat(ASCCal,1,512,512).*(FITSData - repmat(ASCBias,1,512,512)) ./ (1000*repmat(t_exp,1,512,512));
-% % DarkRayData = repmat(ASCCal,1,512,512).*(DarkData - repmat(ASCBias,1,512,512)) ./ (1000*repmat(t_exp,1,512,512));
+% DarkRayData = repmat(ASCCal,1,512,512).*(DarkData - repmat(ASCBias,1,512,512)) ./ (1000*repmat(t_exp,1,512,512));
 % % ASCPlotterAll(ASCRayData,FITSFilename,'k-Rayleighs', 0, 1, 7)
 % ASCPlotterAll(DarkRayData,FITSFilename,'k-Rayleighs', 0, 1, 8)
 
@@ -230,8 +230,8 @@ rbratio_original = rbratio_all(1);
 % %     hold on;
 %     disp('pause');
 % end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
-% 
+
+
 % test = squeeze(RBData);
 % % neg_ind = find(test < 0);
 % one_ind = find(test == 1);
@@ -245,7 +245,7 @@ rbratio_original = rbratio_all(1);
 % title(['RBData ' num2str(casetimestr)]);
 % scatter(bxpix, bypix, 20, 'go', 'LineWidth', 2);
 % scatter(prnxpix, prnypix, 20, 'mx', 'LineWidth', 2)
-% 
+
 % 
 % f2 = figure; figure(f2);
 % GData = ASCRay10Data(1,:,:);
@@ -272,13 +272,14 @@ rbratio_original = rbratio_all(1);
 % title(['BData ' num2str(casetimestr)]);
 % 
 % close(f1); close(f2); close(f3); close(f4);
-% 
+
 % save('data_201424.mat', 'RBData', 'bxpix', 'bypix', 'prnxpix', 'prnypix', 'PRN');
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%  ASCPlotterCase1(Case1Data,'St. Patricks Day Storm - March 18, 2015 08:06:17 UTC','630nm / 428nm ratio', 1, 1, 15,prnxpix, prnypix, bxpix, bypix)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% ASCPlotterCase1(Case1Data,'St. Patricks Day Storm - March 18, 2015 08:06:17 UTC','630nm / 428nm ratio', 1, 1, 15,...
+% 	prnxpix, prnypix, bxpix, bypix)
+
 EFcat_original = "-";%string.empty;
 EFcat_new = "-";
 EFcat_NewGPS = "-";
@@ -295,8 +296,8 @@ end
 function [layer] = ratio2layer(ratio)
 % IN/OUT: nx1 vector
 layer=strings(length(ratio),1);
-layer(find(ratio>1.35))="F";
-layer(find(ratio<=1.35))="E";
+layer(find(ratio>0.5))="F";
+layer(find(ratio<=0.5))="E";
 layer(find(ratio<0.06))="D";
 end
 

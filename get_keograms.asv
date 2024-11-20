@@ -21,8 +21,16 @@ for i = 1:length(Years_Running)
     ftobj = ftp('optics.gi.alaska.edu');
     cd(ftobj, ['PKR/DMSP/NCDF/' num2str(Years_Running(i))]);
     for k = 1:length(KeoDates{i})
+        z_month = '';
+        z_day = '';
+        if month(KeoDates{i}(k)) < 10
+            z_month = '0';
+        end
+        if day(KeoDates{i}(k)) < 10
+            z_day = '0';
+        end
         try
-            filename = ['PKR_SMSP_STD_' num2str(KeoDates{i}(k)) '.NC'];
+            filename = ['PKR_SMSP_STD_' num2str(year(KeoDates{i}(k))) z_month num2str(month(KeoDates{i}(k))) z_day num2str(day(KeoDates{i}(k) '.NC'];
         catch
             disp('pause');
         end

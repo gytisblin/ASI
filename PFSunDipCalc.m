@@ -1,6 +1,5 @@
 function [TimeList, TimeSeconds, Zenith, Azimuth, SavedFileNames] = PFSunDipCalc(FileNames, run_SunDipCalc)
- flag = run_SunDipCalc;
-% flag=0
+flag = run_SunDipCalc;
 switch flag
     case 0
 % check saved SunAngles matches current ones

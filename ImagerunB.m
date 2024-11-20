@@ -1,12 +1,11 @@
-% Script to generate ASC bias (camera counts), Index where az/el mapping
-% present (away from horizon), index of pixels near Bzenith, 
-function [ASCBias, MappedIndex, GoodIndex, xcart, ycart, zcart,...
-          CloseBIndex, CloseBScreen, bxpix, bypix, bf_azel] = BFprerun
+% Script for spectral analysis of a GBR sequence of ASI images
+% in direction of given pixel - magnetic field LOS
+% GBRFITSname = nx1 string array of names (Green,Blue,Red)
+function [Bgbrkr, Brbratio, BEFcat] = ImagerunB(ASCBias, bxpix, bypix, GBRFITSname)
 
-
-% GreenFilename = 'PKR_DASC_0558_20150318_080613.426.FITS'; %GBR order
-% BlueFilename = 'PKR_DASC_0428_20150318_080617.644.FITS';
-% RedFilename = 'PKR_DASC_0630_20150318_080621.269.FITS';
+GreenFilename = GBRFITSname(1); %GBR order
+BlueFilename = GBRFITSname(2);
+RedFilename = GBRFITSname(3);
 % TargetFile = {GreenFilename;BlueFilename;RedFilename};
 % TargetFile(1) = ASCFileList(1,GreenFilename);%column vector GBR order
 % TargetFile(2) = ASCFileList(2,BlueFilename);
@@ -16,165 +15,40 @@ function [ASCBias, MappedIndex, GoodIndex, xcart, ycart, zcart,...
 
 % fitsdisp(RedFilename,'Mode','full')
 % FITSInfo = fitsinfo(RedFilename)
-% FITSFilename = {GreenFilename;BlueFilename;RedFilename};
-% FITSData(1,:,:) = fitsread(GreenFilename); %GBR order
-% FITSData(2,:,:) = fitsread(BlueFilename);
-% FITSData(3,:,:) = fitsread(RedFilename);
-% ASCPlotterAll(FITSData,FITSFilename,'counts', 0, 1, 5)
+FITSFilename = GBRFITSname;
 
-% DarkTimes / Bias calculation
-DarkGreenFilename = 'PKR_DASC_0558_20140103_044807.677.FITS';
-DarkBlueFilename = 'PKR_DASC_0428_20140103_044811.911.FITS';
-DarkRedFilename = 'PKR_DASC_0630_20140103_044815.536.FITS';
-% DarkFilename = {DarkGreenFilename;DarkBlueFilename;DarkRedFilename};
-DarkData(1,:,:) = fitsread(DarkGreenFilename); %GBR order
-DarkData(2,:,:) = fitsread(DarkBlueFilename);
-DarkData(3,:,:) = fitsread(DarkRedFilename);
-% ASCPlotterAll(DarkData,DarkFilename,'counts', 0, 1, 6)
+FITSData(1,:,:) = fitsread(GreenFilename); %GBR order
+FITSData(2,:,:) = fitsread(BlueFilename);
+FITSData(3,:,:) = fitsread(RedFilename);
 
-% 12x12 bottom-right corner region (501:512,501:512) averaged, used as bias
-BiasRegion = DarkData(:,501:512,501:512);
-ASCBias = mean(BiasRegion, [2 3]);%
+    % ASCPlotterAll(FITSData,FITSFilename,'counts', 0, 1, 5)
+
+% % DarkTimes / Bias calculation
+% DarkGreenFilename = 'PKR_DASC_0558_20140103_044807.677.FITS';
+% DarkBlueFilename = 'PKR_DASC_0428_20140103_044811.911.FITS';
+% DarkRedFilename = 'PKR_DASC_0630_20140103_044815.536.FITS';
+% % DarkFilename = {DarkGreenFilename;DarkBlueFilename;DarkRedFilename};
+% DarkData(1,:,:) = fitsread(DarkGreenFilename); %GBR order
+% DarkData(2,:,:) = fitsread(DarkBlueFilename);
+% DarkData(3,:,:) = fitsread(DarkRedFilename);
+% % ASCPlotterAll(DarkData,DarkFilename,'counts', 0, 1, 6)
+% 
+% % 12x12 bottom-right corner region (501:512,501:512) averaged, used as bias
+% BiasRegion = DarkData(:,501:512,501:512);
+% ASCBias = mean(BiasRegion, [2 3]);%
 
 % k-Rayleigh = FreqCalib(from Don Hampton) * (FITS-Background)/(exposure time*1000)
 ASCCal = [70; 105; 27]; %Rayleighs/count (for 1s exposure) GBR
-t_exp = [1; 1; 1.5]; %seconds exposure, GBR (ie red=1.5s)
-% ASCRayData = repmat(ASCCal,1,512,512).*(FITSData - repmat(ASCBias,1,512,512)) ./ (1000*repmat(t_exp,1,512,512));
-% DarkRayData = repmat(ASCCal,1,512,512).*(DarkData - repmat(ASCBias,1,512,512)) ./ (1000*repmat(t_exp,1,512,512));
-% ASCPlotterAll(ASCRayData,FITSFilename,'k-Rayleighs', 0, 1, 7)
-% ASCPlotterAll(DarkRayData,FITSFilename,'k-Rayleighs', 0, 1, 8)
+t_exp = [1; 1; 1.5]; %seconds exposure, GBR (ie red=1.5s, others 1s)
+% output calibrated 
+ASCRayData = repmat(ASCCal,1,512,512).*(FITSData - repmat(ASCBias,1,512,512)) ./ (1000*repmat(t_exp,1,512,512));
+Bgbrkr = ASCRayData(:,bxpix,bypix);
+Bgbrkr = Bgbrkr';
+Brbratio = Bgbrkr(3)/Bgbrkr(2);
 
-% 3 ratios - (R/B),(G/B),(R/G)
-% set low elevations to 1 to prevent finding ratios of dark regions (noise)
-ElMapFileName = 'PKR_DASC_0558_20150213_El.FIT';
-ElData = fitsread(ElMapFileName);
-MappedIndex = find(~ElData); %linear indices of zero elevation pixels
-% ASCRay10Data = ASCRayData;
-% for i=1:3
-%     temp = squeeze(ASCRay10Data(i,:,:));
-%     temp(MappedIndex) = 1;
-%     ASCRay10Data(i,:,:) = temp;
-% end
-% RBData = ASCRay10Data(3,:,:)./ASCRay10Data(2,:,:);
-% GBData = ASCRay10Data(1,:,:)./ASCRay10Data(2,:,:);
-% RGData = ASCRay10Data(3,:,:)./ASCRay10Data(1,:,:);
-% RatioData = [RBData;GBData;RGData];
-% RBFilename = [FITSFilename(3) FITSFilename(2)];
-% GBFilename = [FITSFilename(1) FITSFilename(2)];
-% RGFilename = [FITSFilename(3) FITSFilename(1)];
-% RatioFilename = [RBFilename;GBFilename;RGFilename];
-% ASCPlotterAll(RatioData,RatioFilename,'ratio', 1, 1, 9)
-% 
-% snaptime = datetime(2015,03,18,08,06,17);
-% snapazel1 = dazel_list(25,snaptime)
-% snapazel2 = dazel_list(29,snaptime)
-% snapazel3 = dazel_list(31,snaptime)
+BEFcat = "-";%string.empty;
+BEFcat = ratio2layer(Brbratio);
 
-bf_azel = [205.7 77.5];
-
-% anglesnap1 = btwazel(bf_azel,snapazel1)
-% anglesnap2 = btwazel(bf_azel,snapazel2)
-% anglesnap3 = btwazel(bf_azel,snapazel3)
-
-% TEST = dazel_list(23,datetime(2015,10,07,06,20,00))
-% ANGLECLOSE = btwazel(bf_azel,TEST)
-% TEST2 = dazel_list(30,datetime(2014,11,16,09,20,00))
-% ANGLECLOSE = btwazel(bf_azel,TEST2)
-% 
-% TESTCLOSE = dazel_list(1,datetime(2014,11,16,01,00,00))
-% ANGLECLOSE = btwazel(bf_azel,TESTCLOSE)
-% 
-% TESTCLOSEF = dazel_list(1,datetime(2014,11,16,01,15,00))
-% ANGLECLOSEF = btwazel(bf_azel,TESTCLOSEF)
-
-% find angle between all points on ASC grid to find nearest pixel to LOS
-AzMapFileName = 'PKR_DASC_0558_20150213_Az.FIT';
-AzData = fitsread(AzMapFileName);
-GoodIndex = find(ElData);
-% ElMapFileName = 'PKR_DASC_0558_20150213_El.FIT';
-% ElData = fitsread(ElMapFileName);
-% create xyz grid for pixels
-ascazel(1,:,:) = permute(AzData,[3 1 2]);%[2x512x512] [az=1/el=2 by X by Y]
-ascazel(2,:,:) = permute(ElData,[3 1 2]);
-ascxyz = zeros(3,512,512);%[3x512x512] [x=1/y=2/z=3 by X by Y]
-xcart = zeros(512,512);%transform back to this from linear
-ycart = zeros(512,512);
-zcart = zeros(512,512);
-AzDataLin = AzData(:);
-ElDataLin = ElData(:);
-dummyones = ones(512,512);
-[xcart(GoodIndex) ycart(GoodIndex) zcart(GoodIndex)]  = ...
-    sph2cart(deg2rad(AzData(GoodIndex)),deg2rad(ElData(GoodIndex)),dummyones(GoodIndex));
-
-% now from xyz of full asc find map of angle between it and bf_azel
-bf_anglebtw = 30*ones(512,512);%initialize greater than cutoff
-
-bf_anglebtw(GoodIndex) = btwazel_xyzmap(bf_azel,xcart(GoodIndex),ycart(GoodIndex),zcart(GoodIndex));
-% figure(10);imagesc(bf_anglebtw);
-
-CloseBIndex = find(bf_anglebtw<=25);
-CloseBScreen = zeros(512,512);
-CloseBScreen(CloseBIndex) = 1;
-% figure(11);imagesc(CloseBScreen);
-
-% find closest pixel x,y to bf, ie minimize anglebtw AFTER screen
-ScreenAngle = CloseBScreen.*bf_anglebtw;
-% figure(12);imagesc(ScreenAngle);
-
-[bxpix,bypix,minangle] = minanglefind(ScreenAngle, CloseBIndex);
-% figure(12);hold on;
-% plot(bypix,bxpix,'xr')
-
-% % overlay ASI with PRN, BF locations
-% tempdata = squeeze(RBData);
-% % find prn locations
-% % this case prn 25,29,31
-% casetime = datetime(2015,03,18,08,06,17)
-% prn25azel = dazel_list(25,casetime)
-% prn25btw = btwazel(bf_azel,prn25azel)
-% % find angles
-% prn25_anglebtw = 30*ones(512,512);%initialize greater than cutoff
-% prn25_anglebtw(GoodIndex) = btwazel_xyzmap(prn25azel,xcart(GoodIndex),ycart(GoodIndex),zcart(GoodIndex));
-% % if min is less than 30 in restricted view, then spectral pixel is min
-% figure(13);imagesc(prn25_anglebtw);
-% [prn25xpix,prn25ypix,prn25minGRID] = minanglefind(prn25_anglebtw, GoodIndex);
-% figure(13);hold on;
-% plot(prn25ypix,prn25xpix,'rx','LineWidth',3,'MarkerEdgeColor','r','MarkerSize',10)
-% 
-% prn29azel = dazel_list(29,casetime)
-% prn29btw = btwazel(bf_azel,prn29azel)
-% % find angles
-% prn29_anglebtw = 30*ones(512,512);%initialize greater than cutoff
-% prn29_anglebtw(GoodIndex) = btwazel_xyzmap(prn29azel,xcart(GoodIndex),ycart(GoodIndex),zcart(GoodIndex));
-% % if min is less than 30 in restricted view, then spectral pixel is min
-% [prn29xpix,prn29ypix,prn29minGRID] = minanglefind(prn29_anglebtw, GoodIndex);
-% 
-% 
-% prn31azel = dazel_list(31,casetime)
-% prn31btw = btwazel(bf_azel,prn31azel)
-% % find angles
-% prn31_anglebtw = 30*ones(512,512);%initialize greater than cutoff
-% prn31_anglebtw(GoodIndex) = btwazel_xyzmap(prn31azel,xcart(GoodIndex),ycart(GoodIndex),zcart(GoodIndex));
-% % if min is less than 30 in restricted view, then spectral pixel is min
-% [prn31xpix,prn31ypix,prn31minGRID] = minanglefind(prn31_anglebtw, GoodIndex);
-% 
-% plot(prn29ypix,prn29xpix,'rx','LineWidth',3,'MarkerEdgeColor','r','MarkerSize',10)
-% plot(prn31ypix,prn31xpix,'rx','LineWidth',3,'MarkerEdgeColor','r','MarkerSize',10)
-% plot(bypix,bxpix,'go','LineWidth',3,'MarkerEdgeColor','g','MarkerSize',10)
-% 
-% Case1Data=squeeze(RBData);
-% % figure(14);imagesc(Case1Data);
-% ASCPlotterCase1(Case1Data,'St. Patricks Day Storm - March 18, 2015 08:06:17 UTC','630nm / 428nm ratio', 1, 1, 15,...
-%     prn25xpix, prn25ypix, prn29xpix, prn29ypix, prn31xpix, prn31ypix, bxpix, bypix)
-% 
-% blueray25=ASCRayData(2,prn25xpix,prn25ypix)
-% redray25=ASCRayData(3,prn25xpix,prn25ypix)
-% ratio25=Case1Data(prn25xpix,prn25ypix)
-% layer25=ratio2layer(ratio25)
-% blueray29=ASCRayData(2,prn29xpix,prn29ypix)
-% redray29=ASCRayData(3,prn29xpix,prn29ypix)
-% ratio29=Case1Data(prn29xpix,prn29ypix)
-% layer29=ratio2layer(ratio29)
 end
 
 function [layer] = ratio2layer(ratio)
@@ -239,7 +113,7 @@ anglebtw = acosd(dot(xyz1,xyz2) / (norm(xyz1)*norm(xyz2)));
 end
 
 function ASCPlotterCase1(FITSData, TitleStr, ColorbName, Trim10Flag, ScaleFlag, FigNum,...
-    prnx1, prny1, prnx2, prny2, prnx3, prny3, bx, by)
+    prnx1, prny1, bx, by)
 % Function to plot 3 separate channel ASC images
 % (only plots, no calculations)
 % Blue/Green/RedData etc are CALIBRATED values to plot (Rayleighs)
@@ -298,10 +172,10 @@ figure(FigNum);
     imagesc(ChannelData, ScaleMax);hold on;
 %     prnx1, prny1, prnx2, prny2, prnx3, prny3, bx, by)
     plot(prny1,prnx1,'+m','LineWidth',3,'MarkerEdgeColor','m','MarkerSize',10)
-    plot(prny2,prnx2,'^m','LineWidth',3,'MarkerEdgeColor','m','MarkerSize',10)
-    plot(prny3,prnx3,'rx','LineWidth',3,'MarkerEdgeColor','r','MarkerSize',10)
+%     plot(prny2,prnx2,'^m','LineWidth',3,'MarkerEdgeColor','m','MarkerSize',10)
+%     plot(prny3,prnx3,'rx','LineWidth',3,'MarkerEdgeColor','r','MarkerSize',10)
     plot(by,bx,'go','LineWidth',3,'MarkerEdgeColor','g','MarkerSize',10)
-    legend('PRN25','PRN29','PRN31','B Line');
+%     legend('PRN25','PRN29','PRN31','B Line');
     colorbar;
     title(TitleStr, 'Interpreter', 'none','FontSize',16);
 %     t=title;
